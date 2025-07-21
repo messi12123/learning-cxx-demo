@@ -11,6 +11,17 @@ constexpr unsigned long long fibonacci(int i) {
     }
 }
 
+// constexpr unsigned long long fibonacci(int n) {
+//     if (n <= 1) return n;
+//     unsigned long long a = 0, b = 1;
+//     for (int i = 2; i <= n; ++i) {
+//         auto temp = a + b;
+//         a = b;
+//         b = temp;
+//     }
+//     return b;
+// }
+
 int main(int argc, char **argv) {
     constexpr auto FIB20 = fibonacci(20);
     ASSERT(FIB20 == 6765, "fibonacci(20) should be 6765");
