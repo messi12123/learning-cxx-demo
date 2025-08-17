@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     ASSERT(observer.use_count() == 2, "");
 
     shared = observer.lock();         // 再拿一份强引用 → 2
-    ASSERT(observer.use_count() == 4, "");
+    ASSERT(observer.use_count() == 3, "");
 
     shared = nullptr;
     for (auto &ptr : ptrs) ptr = nullptr; // 把最后那份也清了 → 0
