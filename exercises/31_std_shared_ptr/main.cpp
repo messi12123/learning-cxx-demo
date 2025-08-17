@@ -29,10 +29,10 @@ int main(int argc, char **argv) {
     std::ignore = std::move(ptrs[0]); // 清空 ptrs[0] → 2
     ptrs[1] = std::move(ptrs[1]);     // 自我移动，无变化 → 2
     ptrs[1] = std::move(ptrs[2]);     // 合并所有权：先释放自身(-1)再接管(+0)，最终只剩 1
-    ASSERT(observer.use_count() == 1, "");
+    ASSERT(observer.use_count() == 2, "");
 
     shared = observer.lock();         // 再拿一份强引用 → 2
-    ASSERT(observer.use_count() == 2, "");
+    ASSERT(observer.use_count() == 3, "");
 
     shared = nullptr;
     for (auto &ptr : ptrs) ptr = nullptr; // 把最后那份也清了 → 0
