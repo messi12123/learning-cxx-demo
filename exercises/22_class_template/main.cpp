@@ -32,25 +32,32 @@ struct Tensor4D {
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
-        // 1) 形状检查（允许 others 的维度为 1 或与 this 相同）
+        // 1) 形状检查，并计算 this 总元素数
         unsigned int total = 1;
         for (int i = 0; i < 4; ++i) {
             ASSERT(others.shape[i] == 1 || others.shape[i] == shape[i], "Broadcast shape mismatch");
             total *= shape[i];
         }
 
-        // 2) 计算行主序 strides
+        // 2) 计算 this 的标准行主序 stride
         unsigned int self_stride[4];
-        unsigned int other_stride[4];
-        self_stride[3]  = 1;
-        other_stride[3] = (others.shape[3] == 1) ? 0u : 1u;
+        self_stride[3] = 1;
         for (int i = 2; i >= 0; --i) {
-            self_stride[i]  = self_stride[i + 1] * shape[i + 1];
-            // others 该维为 1 时 stride 置 0，实现广播“锁定”该维索引
-            other_stride[i] = (others.shape[i] == 1) ? 0u : other_stride[i + 1] * others.shape[i + 1];
+            self_stride[i] = self_stride[i + 1] * shape[i + 1];
         }
 
-        // 3) 逐元素计算：解码 this 的线性下标为 4D 坐标，再映射到 others 的线性下标
+        // 3) 先计算 others 的“标准 stride”（忽略广播），再逐维应用“为 1 则置 0”的规则
+        unsigned int other_stride_base[4];
+        other_stride_base[3] = 1;
+        for (int i = 2; i >= 0; --i) {
+            other_stride_base[i] = other_stride_base[i + 1] * others.shape[i + 1];
+        }
+        unsigned int other_stride[4];
+        for (int i = 0; i < 4; ++i) {
+            other_stride[i] = (others.shape[i] == 1) ? 0u : other_stride_base[i];
+        }
+
+        // 4) 逐元素：把 this 的线性下标解码为 4D 坐标，再映射到 others 的线性下标
         for (unsigned int lin = 0; lin < total; ++lin) {
             unsigned int idx = lin;
             unsigned int coord[4];
