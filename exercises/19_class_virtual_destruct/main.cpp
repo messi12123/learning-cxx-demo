@@ -5,12 +5,12 @@
 
 struct A {
     // TODO: 正确初始化静态字段
-    static int num_a = 0;
+    static int num_a; // 类内仅声明，类外定义初始化
 
     A() {
         ++num_a;
     }
-    virtual ~A() { // 必须是虚析构
+    virtual ~A() {   // 需要虚析构，确保通过基类指针删除派生对象时行为正确
         --num_a;
     }
 
@@ -18,16 +18,14 @@ struct A {
         return 'A';
     }
 };
-int A::num_a = 0;  // ⚠️ 静态变量定义必须放类外
-
 struct B final : public A {
     // TODO: 正确初始化静态字段
-    static int num_b;
+    static int num_b; // 类内仅声明，类外定义初始化
 
     B() {
         ++num_b;
     }
-    ~B() override { // 虚析构在 A 中已经定义，此处 override
+    ~B() override {
         --num_b;
     }
 
@@ -35,7 +33,10 @@ struct B final : public A {
         return 'B';
     }
 };
-int B::num_b = 0;  // ⚠️ 类外初始化
+
+// —— 静态成员的类外定义与初始化 ——
+int A::num_a = 0;
+int B::num_b = 0;
 
 int main(int argc, char **argv) {
     auto a = new A;
@@ -56,7 +57,7 @@ int main(int argc, char **argv) {
     ASSERT(ab->name() == 'B', "Fill in the correct value for ab->name()");
 
     // TODO: 基类指针无法随意转换为派生类指针，补全正确的转换语句
-    B &bb = *ab;
+    B &bb = dynamic_cast<B &>(*ab);
     ASSERT(bb.name() == 'B', "Fill in the correct value for bb->name()");
 
     // TODO: ---- 以下代码不要修改，通过改正类定义解决编译问题 ----

@@ -32,39 +32,37 @@ struct Tensor4D {
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
-unsigned int total = 1;
+        // 1) 形状检查（允许 others 的维度为 1 或与 this 相同）
+        unsigned int total = 1;
         for (int i = 0; i < 4; ++i) {
             ASSERT(others.shape[i] == 1 || others.shape[i] == shape[i], "Broadcast shape mismatch");
             total *= shape[i];
         }
 
-        // 计算 strides（行主序，4维）
+        // 2) 计算行主序 strides
         unsigned int self_stride[4];
         unsigned int other_stride[4];
-        self_stride[3] = 1;
-        other_stride[3] = (others.shape[3] == 1) ? 0 : 1;
+        self_stride[3]  = 1;
+        other_stride[3] = (others.shape[3] == 1) ? 0u : 1u;
         for (int i = 2; i >= 0; --i) {
-            self_stride[i] = self_stride[i + 1] * shape[i + 1];
-            other_stride[i] = (others.shape[i] == 1) ? 0 : other_stride[i + 1] * others.shape[i + 1];
+            self_stride[i]  = self_stride[i + 1] * shape[i + 1];
+            // others 该维为 1 时 stride 置 0，实现广播“锁定”该维索引
+            other_stride[i] = (others.shape[i] == 1) ? 0u : other_stride[i + 1] * others.shape[i + 1];
         }
 
-        // 广播加法
-        for (unsigned int i = 0; i < total; ++i) {
-            // 解码4D索引
-            unsigned int idx = i;
+        // 3) 逐元素计算：解码 this 的线性下标为 4D 坐标，再映射到 others 的线性下标
+        for (unsigned int lin = 0; lin < total; ++lin) {
+            unsigned int idx = lin;
             unsigned int coord[4];
-            for (int j = 0; j < 4; ++j) {
-                coord[j] = idx / self_stride[j];
-                idx %= self_stride[j];
+            for (int d = 0; d < 4; ++d) {
+                coord[d] = idx / self_stride[d];
+                idx %= self_stride[d];
             }
-
-            // 计算 other 的 index
-            unsigned int o_idx = 0;
-            for (int j = 0; j < 4; ++j) {
-                o_idx += coord[j] * other_stride[j];
+            unsigned int oidx = 0;
+            for (int d = 0; d < 4; ++d) {
+                oidx += coord[d] * other_stride[d];
             }
-
-            data[i] += others.data[o_idx];
+            data[lin] += others.data[oidx];
         }
         return *this;
     }
