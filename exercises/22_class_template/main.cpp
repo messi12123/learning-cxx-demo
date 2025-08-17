@@ -10,6 +10,10 @@ struct Tensor4D {
     Tensor4D(unsigned int const shape_[4], T const *data_) {
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
+        for (int i = 0; i < 4; ++i) {
+            shape[i] = shape_[i];
+            size *= shape_[i];
+        }
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -28,6 +32,40 @@ struct Tensor4D {
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
+unsigned int total = 1;
+        for (int i = 0; i < 4; ++i) {
+            ASSERT(others.shape[i] == 1 || others.shape[i] == shape[i], "Broadcast shape mismatch");
+            total *= shape[i];
+        }
+
+        // 计算 strides（行主序，4维）
+        unsigned int self_stride[4];
+        unsigned int other_stride[4];
+        self_stride[3] = 1;
+        other_stride[3] = (others.shape[3] == 1) ? 0 : 1;
+        for (int i = 2; i >= 0; --i) {
+            self_stride[i] = self_stride[i + 1] * shape[i + 1];
+            other_stride[i] = (others.shape[i] == 1) ? 0 : other_stride[i + 1] * others.shape[i + 1];
+        }
+
+        // 广播加法
+        for (unsigned int i = 0; i < total; ++i) {
+            // 解码4D索引
+            unsigned int idx = i;
+            unsigned int coord[4];
+            for (int j = 0; j < 4; ++j) {
+                coord[j] = idx / self_stride[j];
+                idx %= self_stride[j];
+            }
+
+            // 计算 other 的 index
+            unsigned int o_idx = 0;
+            for (int j = 0; j < 4; ++j) {
+                o_idx += coord[j] * other_stride[j];
+            }
+
+            data[i] += others.data[o_idx];
+        }
         return *this;
     }
 };
