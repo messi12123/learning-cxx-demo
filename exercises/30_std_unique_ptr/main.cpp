@@ -49,13 +49,13 @@ int main(int argc, char **argv) {
 
     // ---- 不要修改以上代码 ----
 
-    std::vector<const char *> answers[]{
-        {"fd"},
-        // 分析 problems[1] 中资源的生命周期
-        {"f", "fd"},
-        // 分析 problems[2] 中资源的生命周期
-        {"d", "d", "rd"},
-    };
+    std::vector<const char *> answers[3];
+    for (int i = 0; i < 3; ++i) {
+        answers[i].reserve(problems[i].size());
+        for (auto &s : problems[i]) {
+            answers[i].push_back(s.c_str()); // 指向 problems 中字符串的存储，生命周期到 main 结束
+        }
+    }
     // ---- 不要修改以下代码 ----
 
     for (auto i = 0; i < 3; ++i) {
